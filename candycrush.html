@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candy Crush · ArcadeVerse</title>
+<style>
+  :root{
+    --bg:#0d0e1a; --panel:#171a2b; --magenta:#ff3d81; --cyan:#29f4d0;
+    --text:#e8e9f3; --muted:#7a7fa0;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; min-height:100%; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI',system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .wrap{ width:min(520px,96vw); }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .backbtn{
+    background:none; border:1px solid var(--muted); color:var(--text);
+    padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;
+  }
+  .backbtn:hover{ border-color:var(--cyan); color:var(--cyan); }
+  h1{ font-size:20px; margin:0; color:var(--cyan); text-shadow:0 0 10px rgba(41,244,208,.5); }
+  .stats{
+    display:flex; gap:10px; margin-bottom:12px;
+  }
+  .stat{
+    flex:1; background:var(--panel); border-radius:10px; padding:10px 12px;
+    text-align:center; border:1px solid #262b45;
+  }
+  .stat .label{ font-size:10px; color:var(--muted); letter-spacing:.05em; }
+  .stat .value{ font-size:20px; font-weight:800; color:var(--text); }
+  .progress-bar{
+    height:8px; border-radius:6px; background:#262b45; overflow:hidden; margin-top:6px;
+  }
+  .progress-fill{ height:100%; background:linear-gradient(90deg,var(--magenta),var(--cyan)); width:0%; transition:width .3s; }
+  #board{
+    display:grid; grid-template-columns:repeat(8,1fr); gap:5px;
+    background:var(--panel); border-radius:14px; padding:10px;
+    border:1px solid #262b45; position:relative;
+  }
+  .cell{
+    aspect-ratio:1; border-radius:10px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; user-select:none; transition:transform .15s;
+    position:relative;
+  }
+  .cell.selected{ outline:2px solid var(--cyan); outline-offset:-2px; transform:scale(1.05); }
+  .cell.clearing{ animation:pop .28s forwards; }
+  .cell.dropping{ animation:none; }
+  @keyframes pop{
+    0%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(0.2); opacity:0; }
+  }
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,12,22,.9); display:flex;
+    align-items:center; justify-content:center; z-index:20;
+  }
+  .hidden{ display:none; }
+  .modal{
+    background:var(--panel); border:1px solid #262b45; border-radius:14px;
+    padding:28px 30px; text-align:center; max-width:280px;
+  }
+  .modal .title{ font-size:22px; font-weight:800; margin-bottom:10px; }
+  .modal.win .title{ color:var(--cyan); }
+  .modal.lose .title{ color:var(--magenta); }
+  .btn-primary{
+    margin-top:14px; background:linear-gradient(135deg,var(--magenta),#c62368);
+    color:#fff; border:none; padding:10px 22px; border-radius:8px;
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .hint{ color:var(--muted); font-size:11px; text-align:center; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button class="backbtn" onclick="goBack()">‹ Back</button>
+    <h1>Candy Crush</h1>
+    <div style="width:70px;"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">SCORE</div><div class="value" id="scoreVal">0</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="stat"><div class="label">MOVES LEFT</div><div class="value" id="movesVal">20</div></div>
+    <div class="stat"><div class="label">TARGET</div><div class="value" id="targetVal">1500</div></div>
+  </div>
+
+  <div id="board"></div>
+  <p class="hint">Click or drag a candy onto an adjacent one to swap. Match 3+ in a row or column.</p>
+</div>
+
+<div class="overlay hidden" id="endOverlay">
+  <div class="modal" id="endModal">
+    <div class="title" id="endTitle">You Win!</div>
+    <p id="endSub" style="color:var(--muted); font-size:13px;">Score: 0</p>
+    <button class="btn-primary" id="playAgainBtn">Play Again</button>
+  </div>
+</div>
+
+<script>
+function goBack(){
+  try{ if(window.top !== window.self){ window.top.postMessage({type:'arcadeverse:back'}, '*'); return; } }catch(e){}
+  window.location.href = 'index.html';
+}
+
+const SIZE = 8;
+const CANDIES = [
+  {emoji:'🍬', color:'#ff3d81'},
+  {emoji:'🍭', color:'#29f4d0'},
+  {emoji:'🍋', color:'#ffd23f'},
+  {emoji:'🍇', color:'#9d6bff'},
+  {emoji:'🍓', color:'#ff6b6b'},
+];
+const TARGET_SCORE = 1500;
+const START_MOVES = 20;
+
+let grid = [];
+let score = 0;
+let moves = START_MOVES;
+let selected = null;
+let busy = false;
+
+const boardEl = document.getElementById('board');
+const scoreVal = document.getElementById('scoreVal');
+const movesVal = document.getElementById('movesVal');
+const targetVal = document.getElementById('targetVal');
+const progressFill = document.getElementById('progressFill');
+const endOverlay = document.getElementById('endOverlay');
+const endModal = document.getElementById('endModal');
+const endTitle = document.getElementById('endTitle');
+const endSub = document.getElementById('endSub');
+
+targetVal.textContent = TARGET_SCORE;
+
+function randCandy(){ return Math.floor(Math.random()*CANDIES.length); }
+
+function buildInitialGrid(){
+  grid = [];
+  for(let r=0;r<SIZE;r++){
+    const row = [];
+    for(let c=0;c<SIZE;c++){
+      let val;
+      do{
+        val = randCandy();
+      }while(
+        (c>=2 && row[c-1]===val && row[c-2]===val) ||
+        (r>=2 && grid[r-1][c]===val && grid[r-2][c]===val)
+      );
+      row.push(val);
+    }
+    grid.push(row);
+  }
+}
+
+function render(){
+  boardEl.innerHTML = '';
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r; cell.dataset.c = c;
+      const val = grid[r][c];
+      if(val !== null){
+        cell.textContent = CANDIES[val].emoji;
+        cell.style.background = hexAlpha(CANDIES[val].color, 0.16);
+      }
+      if(selected && selected.r===r && selected.c===c) cell.classList.add('selected');
+      cell.addEventListener('click', ()=>onCellClick(r,c));
+      cell.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', JSON.stringify({r,c})); });
+      cell.setAttribute('draggable','true');
+      cell.addEventListener('dragover', (e)=>e.preventDefault());
+      cell.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        const from = JSON.parse(e.dataTransfer.getData('text/plain'));
+        attemptSwap(from.r, from.c, r, c);
+      });
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function hexAlpha(hex, a){
+  const n = parseInt(hex.slice(1),16);
+  const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function onCellClick(r,c){
+  if(busy || moves<=0) return;
+  if(!selected){ selected = {r,c}; render(); return; }
+  if(selected.r===r && selected.c===c){ selected=null; render(); return; }
+  const dr = Math.abs(selected.r-r), dc = Math.abs(selected.c-c);
+  if(dr+dc === 1){
+    attemptSwap(selected.r, selected.c, r, c);
+  } else {
+    selected = {r,c}; render();
+  }
+}
+
+function attemptSwap(r1,c1,r2,c2){
+  if(busy || moves<=0) return;
+  const dr = Math.abs(r1-r2), dc = Math.abs(c1-c2);
+  if(dr+dc !== 1) { selected=null; render(); return; }
+  selected = null;
+  swap(r1,c1,r2,c2);
+  const matches = findMatches();
+  if(matches.length === 0){
+    swap(r1,c1,r2,c2); // swap back
+    render();
+    return;
+  }
+  moves--;
+  movesVal.textContent = moves;
+  render();
+  busy = true;
+  setTimeout(()=>resolveMatches(), 150);
+}
+
+function swap(r1,c1,r2,c2){
+  const tmp = grid[r1][c1];
+  grid[r1][c1] = grid[r2][c2];
+  grid[r2][c2] = tmp;
+}
+
+function findMatches(){
+  const matched = new Set();
+  for(let r=0;r<SIZE;r++){
+    let run = [0];
+    for(let c=1;c<=SIZE;c++){
+      if(c<SIZE && grid[r][c]!==null && grid[r][c]===grid[r][c-1]){
+        run.push(c);
+      } else {
+        if(run.length>=3) run.forEach(cc=>matched.add(r+'_'+cc));
+        run=[c];
+      }
+    }
+  }
+  for(let c=0;c<SIZE;c++){
+    let run=[0];
+    for(let r=1;r<=SIZE;r++){
+      if(r<SIZE && grid[r][c]!==null && grid[r][c]===grid[r-1][c]){
+        run.push(r);
+      } else {
+        if(run.length>=3) run.forEach(rr=>matched.add(rr+'_'+c));
+        run=[r];
+      }
+    }
+  }
+  return Array.from(matched).map(s=>{ const [r,c]=s.split('_').map(Number); return {r,c}; });
+}
+
+function resolveMatches(){
+  const matches = findMatches();
+  if(matches.length === 0){
+    busy = false;
+    checkEndState();
+    return;
+  }
+  score += matches.length * 30;
+  scoreVal.textContent = score;
+  progressFill.style.width = Math.min(100, (score/TARGET_SCORE)*100) + '%';
+
+  // mark clearing visually
+  matches.forEach(({r,c})=>{
+    const idx = r*SIZE+c;
+    const el = boardEl.children[idx];
+    if(el) el.classList.add('clearing');
+  });
+
+  setTimeout(()=>{
+    matches.forEach(({r,c})=>{ grid[r][c] = null; });
+    collapseGrid();
+    render();
+    setTimeout(()=>resolveMatches(), 220);
+  }, 220);
+}
+
+function collapseGrid(){
+  for(let c=0;c<SIZE;c++){
+    let pointer = SIZE-1;
+    for(let r=SIZE-1;r>=0;r--){
+      if(grid[r][c] !== null){
+        grid[pointer][c] = grid[r][c];
+        if(pointer !== r) grid[r][c] = null;
+        pointer--;
+      }
+    }
+    for(let r=pointer;r>=0;r--){
+      grid[r][c] = randCandy();
+    }
+  }
+}
+
+function checkEndState(){
+  if(score >= TARGET_SCORE){
+    showEnd(true);
+  } else if(moves <= 0){
+    showEnd(false);
+  }
+}
+
+function showEnd(won){
+  endModal.className = 'modal ' + (won ? 'win' : 'lose');
+  endTitle.textContent = won ? 'You Win!' : 'Out of Moves';
+  endSub.textContent = 'Final score: ' + score;
+  endOverlay.classList.remove('hidden');
+}
+
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  endOverlay.classList.add('hidden');
+  score = 0; moves = START_MOVES; selected = null; busy = false;
+  scoreVal.textContent = 0; movesVal.textContent = moves; progressFill.style.width='0%';
+  buildInitialGrid();
+  render();
+});
+
+buildInitialGrid();
+render();
+</script>
+</body>
+</html>

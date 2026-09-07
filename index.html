@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadeVerse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c16;
+    --bg-2:#0d0e1a;
+    --panel:#151829;
+    --panel-2:#1a1e34;
+    --border:#262b45;
+    --magenta:#ff3d81;
+    --cyan:#29f4d0;
+    --gold:#ffd23f;
+    --violet:#9d6bff;
+    --text:#e8e9f3;
+    --muted:#7a7fa0;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; min-height:100%;
+  }
+  ::selection{ background:var(--magenta); color:#fff; }
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px; background:rgba(11,12,22,0.85);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--border);
+    gap:20px;
+  }
+  .logo{
+    font-family:'Press Start 2P', monospace; font-size:15px; color:var(--cyan);
+    text-shadow:0 0 12px rgba(41,244,208,.55); letter-spacing:1px; white-space:nowrap;
+  }
+  .logo span{ color:var(--magenta); text-shadow:0 0 12px rgba(255,61,129,.55); }
+  .search-wrap{
+    flex:1; max-width:420px; position:relative;
+  }
+  .search-wrap input{
+    width:100%; background:var(--panel); border:1px solid var(--border);
+    border-radius:9px; padding:9px 14px 9px 36px; color:var(--text);
+    font-size:13.5px; outline:none; transition:border-color .15s;
+  }
+  .search-wrap input:focus{ border-color:var(--cyan); }
+  .search-wrap input::placeholder{ color:var(--muted); }
+  .search-icon{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; opacity:.6;
+  }
+  .profile{
+    display:flex; align-items:center; gap:9px; padding:6px 12px 6px 6px;
+    border:1px solid var(--border); border-radius:24px; cursor:pointer;
+    background:var(--panel); white-space:nowrap;
+  }
+  .profile:hover{ border-color:var(--violet); }
+  .avatar{
+    width:28px; height:28px; border-radius:50%;
+    background:linear-gradient(135deg,var(--magenta),var(--violet));
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800;
+  }
+  .profile .name{ font-size:13px; font-weight:600; }
+  .profile .rank{ font-size:10.5px; color:var(--muted); }
+
+  main{ max-width:1180px; margin:0 auto; padding:34px 28px 80px; }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative; border-radius:20px; overflow:hidden;
+    border:1px solid var(--border);
+    background:
+      radial-gradient(circle at 80% 20%, rgba(255,61,129,0.16), transparent 45%),
+      radial-gradient(circle at 15% 85%, rgba(41,244,208,0.14), transparent 50%),
+      linear-gradient(160deg, #12142380, #0d0e1a);
+    padding:44px 40px;
+    display:flex; align-items:center; justify-content:space-between; gap:32px;
+    min-height:260px;
+  }
+  .hero::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay;
+  }
+  .hero-copy{ position:relative; z-index:2; max-width:520px; }
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--gold);
+    margin-bottom:14px; font-weight:600;
+  }
+  .hero-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px var(--gold); animation:blink 1.6s infinite; }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.25;} }
+  .hero h1{
+    font-size:clamp(26px, 3.4vw, 38px); line-height:1.15; margin:0 0 14px;
+    font-weight:800; letter-spacing:-0.01em;
+  }
+  .hero p{ color:var(--muted); font-size:14.5px; line-height:1.65; margin:0 0 24px; }
+  .hero-actions{ display:flex; gap:12px; }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--magenta),#c62368);
+    color:#fff; border:none; padding:12px 24px; border-radius:9px;
+    font-size:13.5px; font-weight:700; cursor:pointer; transition:filter .15s, transform .15s;
+  }
+  .btn-primary:hover{ filter:brightness(1.12); transform:translateY(-1px); }
+  .btn-ghost{
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    padding:12px 22px; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+  .btn-ghost:hover{ border-color:var(--cyan); color:var(--cyan); }
+
+  .hero-visual{
+    position:relative; z-index:2; width:230px; height:190px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cabinet{
+    width:190px; height:190px; border-radius:16px;
+    background:linear-gradient(160deg,#1c2038,#12141f);
+    border:1px solid var(--border); position:relative; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,.45);
+  }
+  .cabinet .screen{
+    position:absolute; inset:14px; border-radius:8px;
+    background:#0a0c16; overflow:hidden; border:1px solid #2a2f4a;
+  }
+  .cabinet .brick{
+    position:absolute; width:16px; height:8px; border-radius:2px;
+  }
+  .cabinet .bird{
+    position:absolute; width:14px; height:14px; border-radius:50%;
+    background:var(--gold); left:40px; top:60px; animation:hover 1.8s ease-in-out infinite;
+  }
+  @keyframes hover{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-14px); } }
+
+  /* ---------- SECTION HEADER ---------- */
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin:44px 0 20px;
+  }
+  .section-head h2{ font-size:20px; margin:0; font-weight:700; }
+  .section-head span{ color:var(--muted); font-size:13px; }
+
+  /* ---------- GAME GRID ---------- */
+  .game-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:22px;
+  }
+  .card{
+    position:relative; background:var(--panel);
+    border:1px solid var(--border);
+    clip-path:polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%);
+    padding:0; cursor:pointer; overflow:hidden;
+    transition:transform .2s ease, border-color .2s ease;
+  }
+  .card:hover{ transform:translateY(-4px); border-color:var(--accent, var(--cyan)); }
+  .card:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+  .thumb{
+    height:150px; position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .thumb.flappy{ background:linear-gradient(180deg,#12213a,#0c1420); }
+  .thumb.candy{ background:linear-gradient(180deg,#241226,#150c1a); }
+  .thumb.tetris{ background:linear-gradient(180deg,#0f1a2e,#0a0f1c); }
+
+  /* flappy thumb art */
+  .fb-cloud{ position:absolute; width:34px; height:12px; background:rgba(255,255,255,.06); border-radius:8px; }
+  .fb-bird{ width:22px; height:22px; border-radius:50%; background:var(--gold); position:relative; z-index:2; box-shadow:0 0 18px rgba(255,210,63,.35); }
+  .fb-pipe{ position:absolute; width:24px; background:#1e3a52; border:1px solid #2c4d6b; }
+
+  /* candy thumb art */
+  .candy-grid{ display:grid; grid-template-columns:repeat(4,20px); grid-template-rows:repeat(3,20px); gap:5px; }
+  .candy-cell{ border-radius:6px; }
+
+  /* tetris thumb art */
+  .tetro{ display:grid; grid-template-columns:repeat(4,16px); grid-template-rows:repeat(4,16px); gap:2px; }
+  .tetro div{ border-radius:2px; }
+  .tetro .on{ background:var(--violet); box-shadow:0 0 10px rgba(157,107,255,.5); }
+  .tetro .on2{ background:var(--cyan); box-shadow:0 0 10px rgba(41,244,208,.5); }
+
+  .card-body{ padding:18px 18px 20px; }
+  .card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .card-title{ font-size:16.5px; font-weight:700; margin:0; }
+  .tag{
+    font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:5px;
+    white-space:nowrap; letter-spacing:.02em;
+  }
+  .tag.arcade{ background:rgba(41,244,208,.14); color:var(--cyan); }
+  .tag.puzzle{ background:rgba(255,61,129,.14); color:var(--magenta); }
+  .tag.classic{ background:rgba(157,107,255,.16); color:var(--violet); }
+  .card-desc{ color:var(--muted); font-size:13px; line-height:1.55; margin:0 0 16px; min-height:40px; }
+  .play-btn{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:10px; border-radius:8px; font-size:13px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .card:hover .play-btn{ background:var(--accent, var(--cyan)); border-color:var(--accent, var(--cyan)); color:#08101a; }
+
+  /* ---------- GAME VIEW OVERLAY ---------- */
+  .game-overlay{
+    position:fixed; inset:0; z-index:100; background:rgba(6,7,13,0.6);
+    backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .25s ease;
+  }
+  .game-overlay.active{ opacity:1; pointer-events:auto; }
+  .game-panel{
+    width:min(620px, 94vw); max-height:92vh; background:var(--bg-2);
+    border:1px solid var(--border); border-radius:16px; overflow:hidden;
+    transform:translateY(18px) scale(.98); opacity:0;
+    transition:transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s ease;
+    display:flex; flex-direction:column;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+  }
+  .game-overlay.active .game-panel{ transform:translateY(0) scale(1); opacity:1; }
+  .game-panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .game-panel-head .gtitle{ font-size:13px; font-weight:700; color:var(--muted); }
+  .close-btn{
+    background:none; border:1px solid var(--border); color:var(--text);
+    width:28px; height:28px; border-radius:7px; cursor:pointer; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .close-btn:hover{ border-color:var(--magenta); color:var(--magenta); }
+  .game-frame-wrap{ flex:1; min-height:0; }
+  #gameFrame{ width:100%; height:100%; border:0; display:block; background:var(--bg-2); }
+
+  footer{
+    text-align:center; padding:26px; color:var(--muted); font-size:12px;
+    border-top:1px solid var(--border);
+  }
+
+  @media (max-width:720px){
+    .search-wrap{ display:none; }
+    .hero{ flex-direction:column; text-align:left; padding:30px 24px; }
+    .hero-visual{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ARCADE<span>VERSE</span></div>
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#7a7fa0" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Search games...">
+  </div>
+  <div class="profile">
+    <div class="avatar">JD</div>
+    <div>
+      <div class="name">Jordan</div>
+      <div class="rank">Level 12 · High Scorer</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="hero-eyebrow"><span class="dot"></span> Now trending in the arcade</div>
+      <h1>Pick a cabinet, chase a high score.</h1>
+      <p>Three classic arcade games, rebuilt for the browser. No quarters, no queues — just pick a game and start playing in seconds.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="openGame('flappybird.html','Flappy Bird')">Play Flappy Bird</button>
+        <button class="btn-ghost" onclick="document.getElementById('gameGrid').scrollIntoView({behavior:'smooth'})">Browse all games</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="cabinet">
+        <div class="screen">
+          <div class="fb-pipe" style="left:20px; top:0; height:60px;"></div>
+          <div class="fb-pipe" style="left:20px; bottom:0; height:50px;"></div>
+          <div class="fb-pipe" style="left:120px; top:0; height:40px;"></div>
+          <div class="fb-pipe" style="left:120px; bottom:0; height:75px;"></div>
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+            <div class="fb-bird"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-head" id="gameGrid">
+    <h2>All games</h2>
+    <span>3 titles available</span>
+  </div>
+
+  <div class="game-grid">
+
+    <div class="card" style="--accent:var(--cyan);" tabindex="0" onclick="openGame('flappybird.html','Flappy Bird')">
+      <div class="thumb flappy">
+        <div class="fb-cloud" style="left:14px; top:20px;"></div>
+        <div class="fb-cloud" style="right:20px; top:40px; width:24px;"></div>
+        <div class="fb-pipe" style="left:60px; top:0; height:44px;"></div>
+        <div class="fb-pipe" style="left:60px; bottom:0; height:66px;"></div>
+        <div class="fb-pipe" style="left:160px; top:0; height:70px;"></div>
+        <div class="fb-pipe" style="left:160px; bottom:0; height:40px;"></div>
+        <div class="fb-bird"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <h3 class="card-title">Flappy Bird</h3>
+          <span class="tag arcade">Arcade</span>
+        </div>
+        <p class="card-desc">Tap to flap and thread the needle through an endless run of pipes. One touch, one mistake — how far can you go?</p>
+        <button class="play-btn">▶ Play Now</button>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--magenta);" tabindex="0" onclick="openGame('candycrush.html','Candy Crush')">
+      <div class="thumb candy">
+        <div class="candy-grid">
+          <div class="candy-cell" style="background:#ff3d81;"></div>
+          <div class="candy-cell" style="background:#29f4d0;"></div>
+          <div class="candy-cell" style="background:#ffd23f;"></div>
+          <div class="candy-cell" style="background:#9d6bff;"></div>
+          <div class="candy-cell" style="background:#ffd23f;"></div>
+          <div class="candy-cell" style="background:#ff3d81;"></div>
+          <div class="candy-cell" style="background:#9d6bff;"></div>
+          <div class="candy-cell" style="background:#29f4d0;"></div>
+          <div class="candy-cell" style="background:#29f4d0;"></div>
+          <div class="candy-cell" style="background:#ff3d81;"></div>
+          <div class="candy-cell" style="background:#ff3d81;"></div>
+          <div class="candy-cell" style="background:#ffd23f;"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <h3 class="card-title">Candy Crush</h3>
+          <span class="tag puzzle">Match-3</span>
+        </div>
+        <p class="card-desc">Swap, match, and chain combos across an 8×8 board. Hit the target score before you run out of moves.</p>
+        <button class="play-btn">▶ Play Now</button>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--violet);" tabindex="0" onclick="openGame('tetris.html','Tetris')">
+      <div class="thumb tetris">
+        <div class="tetro">
+          <div class="on"></div><div class="on"></div><div></div><div></div>
+          <div></div><div class="on"></div><div></div><div></div>
+          <div></div><div class="on"></div><div class="on2"></div><div class="on2"></div>
+          <div></div><div></div><div class="on2"></div><div class="on2"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <h3 class="card-title">Tetris</h3>
+          <span class="tag classic">Classic</span>
+        </div>
+        <p class="card-desc">Rotate and stack all seven tetrominoes, clear lines before the board fills up, and climb the level ladder.</p>
+        <button class="play-btn">▶ Play Now</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>ArcadeVerse — built for the browser, made for high scores.</footer>
+
+<div class="game-overlay" id="gameOverlay">
+  <div class="game-panel">
+    <div class="game-panel-head">
+      <span class="gtitle" id="gameOverlayTitle">Game</span>
+      <button class="close-btn" onclick="closeGame()">✕</button>
+    </div>
+    <div class="game-frame-wrap">
+      <iframe id="gameFrame" src="about:blank" title="Game view"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  const overlay = document.getElementById('gameOverlay');
+  const frame = document.getElementById('gameFrame');
+  const overlayTitle = document.getElementById('gameOverlayTitle');
+
+  function openGame(src, title){
+    overlayTitle.textContent = title;
+    frame.src = src;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeGame(){
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    setTimeout(()=>{ frame.src = 'about:blank'; }, 300);
+  }
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeGame(); });
+  window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeGame(); });
+  window.addEventListener('message', (e)=>{
+    if(e.data && e.data.type === 'arcadeverse:back'){ closeGame(); }
+  });
+</script>
+
+</body>
+</html>
